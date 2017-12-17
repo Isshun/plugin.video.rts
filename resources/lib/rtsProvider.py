@@ -17,12 +17,11 @@ RTS_URL_RSS_FORMAT = u'?format=rss/podcast'
 
 class tvEpisode:
     """Class about one tv episode."""
-    def __init__(
-            self, title=u'', info=u'', image=u'', pubDate=u'', videoUrl=u''):
+    def __init__(self, title=u'', info=u'', image=u'', pubDate=u'', videoUrl=u''):
         self.title = title
         self.info = info
         self.image = image
-        self.pubDate = pubDate
+        self.pubDate = '2008-12-07'
         self.videoUrl = videoUrl
 
 
@@ -41,6 +40,9 @@ class tvShow:
         tvShowDom = parse(urllib.urlopen(self.podcastUrl))
         for item in tvShowDom.getElementsByTagName('item'):
             epTitle = item.getElementsByTagName('title')[0].childNodes[0].data
+            epTitleText = epTitle[:-12]
+            epTitleDate = epTitle[-10:]
+            epTitle = "[COLOR ff42bcf4][B]" + epTitleDate + "[/B][/COLOR]    " + epTitleText
             epInfo = re.sub(
                 '</?p>',
                 '',
@@ -66,13 +68,17 @@ class tvShow:
 def get_tv_shows():
     """Function to get a list of all tv shows by RTS"""
     listOfTvShows = []
-    podcastsParser = BeautifulSoup(urllib.urlopen(RTS_PODCAST_URL))
-    for podcast in podcastsParser.find_all('li', 'item'):
-        title = podcast.a[u'title']
-        info = u''
-        imgUrlOrigin = RTS_BASE_URL + podcast.img[u'src']
-        imgUrl = imgUrlOrigin.replace('w=149&h=149','w=249&h=249')
-        podcastUrl = RTS_BASE_URL + podcast.a[u'href'] + RTS_URL_RSS_FORMAT
+    podcastsParser = BeautifulSoup(urllib.urlopen(RTS_PODCAST_URL), 'html.parser')
+    for podcast in podcastsParser.find_all('li', 'item-az'):
+        title = podcast.h2.text
+        info = podcast.p.text
+
+        #Utiliser le URL 'resize' de la page d'accueil pour images comprimees
+        # data-src="//www.rts.ch/2017/08/28/11/28/8872054.image"
+        # -> https://www.rts.ch/2014/12/10/06/41/6207584.image/16x9/scale/width/456
+        imgUrlOrigin = podcast.img[u'data-src']  #.strip('/')
+        imgUrl = 'https:' + imgUrlOrigin + '/16x9/scale/width/250'
+        podcastUrl = 'http:' + podcast.a[u'href'] + RTS_URL_RSS_FORMAT
         listOfTvShows.append(tvShow(title, info, imgUrl, podcastUrl))
     return listOfTvShows
 
